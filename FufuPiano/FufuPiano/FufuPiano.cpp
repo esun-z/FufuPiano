@@ -101,7 +101,7 @@ void outputVideo(NOTEEVENT noteList[MAXQUEUELENGTH], int numNote, int trackSeq) 
 }
 
 void printHelp() {
-	cout << "Help:\n\nNecessary Files:\n	sample\\<num>.<FORMAT>\n	ffmpeg.exe\n\n";
+	cout << "Help:\n\nNecessary Files:\n	sample\\<KeyNumber>.<FORMAT>, back.<FORMAT>\n	ffmpeg.exe\n\n";
 	cout << "How to Use:\n	Drop a MIDI file on the program.\n	The MIDI file can be multi tracked,\n	but there shouldn't be any overlapped notes in the same track.\n	Type y or N when needing confirmation.\n\n";
 	cout << "Learn More:\n	Download source code from github: https://github.com/esun-z \n\n";
 }
