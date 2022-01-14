@@ -14,8 +14,14 @@ using namespace std;
 using namespace smf;//midifile
 
 #define MAXQUEUELENGTH 1024
-#define TIMETHRESHOLD 100
-#define FORMAT ".mov"
+
+struct FFPSETTING {
+	string FORMAT;
+	bool ENABLEAUDIO;
+	int TIMETHRESHOLD;
+};
+
+FFPSETTING set;
 
 struct NOTEEVENT {
 	uchar note;
@@ -73,13 +79,21 @@ void outputVideo(NOTEEVENT noteList[MAXQUEUELENGTH], int numNote, int trackSeq) 
 	for (int i = 0; i < numNote; ++i) {
 		command = "ffmpeg -ss 0.000 -to " + to_string((double(noteList[i].outTime - noteList[i].inTime)))
 			+ " -i sample\\" + to_string(noteList[i].note)
-			+ FORMAT + " -c copy temp\\" + to_string(seq) + FORMAT + " -y";
+			+ set.FORMAT + " -c copy";
+		if (!set.ENABLEAUDIO) {
+			command += " -an";
+		}
+		command += " temp\\" + to_string(seq) + set.FORMAT + " -y";
 		system(command.c_str());
 		seq++;
 		//if spare time is too long, add a background video to it
-		if (i < numNote - 1 && noteList[i+1].inTime - noteList[i].outTime > (double)TIMETHRESHOLD / 1000) {
+		if (i < numNote - 1 && noteList[i+1].inTime - noteList[i].outTime > (double)set.TIMETHRESHOLD / 1000) {
 			command = "ffmpeg -ss 0.000 -to " + to_string((double(noteList[i + 1].outTime - noteList[i].inTime)))
-				+ " -i sample\\back" + FORMAT + " -c copy temp\\" + to_string(seq) + FORMAT + " -y";
+				+ " -i sample\\back" + set.FORMAT + " -c copy";
+			if (!set.ENABLEAUDIO) {
+				command += " -an";
+			}
+			command += " temp\\" + to_string(seq) + set.FORMAT + " -y";
 			system(command.c_str());
 			seq++;
 		}
@@ -106,13 +120,57 @@ void printHelp() {
 	cout << "Learn More:\n	Download source code from github: https://github.com/esun-z \n\n";
 }
 
+bool ReadConfig(FFPSETTING &s) {
+	fstream f;
+	f.open("ffpconfig.cfg", ios::in | ios::_Nocreate);
+	if (!f ||  !f.is_open()) {
+		return false;
+	}
+	string str;
+	getline(f, str);
+	s.FORMAT = str;
+	getline(f, str);
+	s.ENABLEAUDIO = (bool)(stoi(str));
+	getline(f, str);
+	s.TIMETHRESHOLD = stoi(str);
+	return true;
+}
+
+void PrintConfig(FFPSETTING s) {
+	cout << "File Format: " << s.FORMAT << "\n";
+	cout << "Enable Audio: ";
+	if (s.ENABLEAUDIO) {
+		cout << "True\n";
+	}
+	else {
+		cout << "False\n";
+	}
+	cout << "Spare Time Threshold: " << s.TIMETHRESHOLD << "\n";
+}
+
 
 int main(int argc, char** argv){
 
-	if (strcmp(*argv, "-h")) {
+	set.FORMAT = ".mov";
+	set.ENABLEAUDIO = false;
+	set.TIMETHRESHOLD = 100;
+
+	
+	if (strcmp(argv[1], "-h") == 0) {
 		printHelp();
 		return 0;
 	}
+	
+	
+	if (!ReadConfig(set)) {
+		cout << "Fail to read config file. \nRunning in default config.\n\n";
+	}
+	else {
+		cout << "Config read.\n\n";
+	}
+	
+
+	PrintConfig(set);
 
 	//process parameters
 	Options options;
